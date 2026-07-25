@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java ATM Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-accent: #1e293b;
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background: linear-gradient(135deg, var(--bg-dark), #000000); color: var(--text-main); min-height: 100vh; display: flex; justify-content: center; align-items: center; overflow-x: hidden; }
+        
+        body::before, body::after {
+            content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(100px); z-index: -1; opacity: 0.4; animation: drift 10s infinite alternate ease-in-out;
+        }
+        body::before { background: #0ea5e9; top: -100px; left: -100px; }
+        body::after { background: #8b5cf6; bottom: -100px; right: -100px; animation-delay: -5s; }
+        @keyframes drift { 0% { transform: translate(0, 0); } 100% { transform: translate(50px, 50px); } }
+
+        .atm-container { width: 100%; max-width: 1000px; padding: 20px; z-index: 10; }
+        .screen { display: none; animation: fadeIn 0.4s ease forwards; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 24px; padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+        
+        h1, h2, h3 { font-weight: 600; margin-bottom: 0.5rem; }
+        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .text-center { text-align: center; }
+        .hidden { display: none !important; }
+
+        input { width: 100%; padding: 1rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 12px; color: white; font-size: 1rem; margin-bottom: 1.2rem; outline: none; }
+        input:focus { border-color: var(--primary); }
+
+        .btn { width: 100%; padding: 1rem; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .primary-btn { background: var(--primary); color: white; }
+        .primary-btn:hover { background: var(--primary-hover); }
+        .secondary-btn { background: transparent; color: var(--text-muted); border: 1px solid var(--glass-border); }
+        .danger-btn-outline { background: transparent; color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); width: auto; padding: 0.5rem 1.5rem; }
+        .error-msg { color: var(--danger); font-size: 0.85rem; margin-bottom: 1rem; text-align: left; }
+        .demo-info { margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; }
+
+        .flex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1.5rem 2rem; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "balance actions" "history history"; gap: 1.5rem; }
+        .balance-card { grid-area: balance; display: flex; flex-direction: column; justify-content: center; }
+        .balance-card h1 { font-size: 3.5rem; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .actions-card { grid-area: actions; }
+        .history-card { grid-area: history; }
+
+        .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .action-btn { background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem 0; color: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; font-weight: 500; transition: all 0.2s;}
+        .action-btn svg { width: 24px; height: 24px; color: var(--primary); }
+        .action-btn:hover { background: var(--primary); transform: translateY(-5px); }
+        .action-btn:hover svg { color: white; }
+
+        .transaction-list { max-height: 300px; overflow-y: auto; padding-right: 0.5rem; }
+        .tx-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--glass-border); }
+        .tx-info p { font-size: 0.8rem; color: var(--text-muted); }
+        .tx-amount { font-weight: 600; font-size: 1.1rem; }
+        .tx-amount.positive { color: var(--success); }
+        .tx-amount.negative { color: var(--text-main); }
+
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); z-index: 100; display: flex; justify-content: center; align-items: center; }
+        .modal-content { width: 100%; max-width: 400px; }
+        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--success); color: white; padding: 1rem 2rem; border-radius: 30px; font-weight: 600; opacity: 0; transition: all 0.3s; z-index: 1000; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; grid-template-areas: "balance" "actions" "history"; }
+        }
+    </style>
+</head>
+<body>
+    <div class="atm-container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="glass-panel text-center" style="max-width:420px; margin:0 auto;">
+                <h1>Java Web ATM</h1>
+                <p class="subtitle">Powered by Java Backend</p>
+                <input type="text" id="userId" placeholder="User ID" autocomplete="off">
+                <input type="password" id="pin" placeholder="PIN" autocomplete="off">
+                <div id="login-error" class="error-msg hidden"></div>
+                <button class="btn primary-btn" onclick="login()">Login</button>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard-screen" class="screen hidden">
+            <header class="glass-panel flex-header">
+                <div><h2 id="welcome-msg">Welcome</h2></div>
+                <button class="btn danger-btn-outline" onclick="logout()">Logout</button>
+            </header>
+            
+            <div class="dashboard-grid">
+                <div class="glass-panel balance-card">
+                    <p class="subtitle">Available Balance</p>
+                    <h1 id="balance-display">$0.00</h1>
+                </div>
+                
+                <div class="glass-panel actions-card">
+                    <h3>Quick Actions</h3>
+                    <div class="action-grid">
+                        <button class="action-btn" onclick="openModal('withdraw-modal')">Withdraw</button>
+                        <button class="action-btn" onclick="openModal('deposit-modal')">Deposit</button>
+                        <button class="action-btn" onclick="openModal('transfer-modal')">Transfer</button>
+                    </div>
+                </div>
+                
+                <div class="glass-panel history-card">
+                    <h3>Recent Transactions</h3>
+                    <div id="transaction-list" class="transaction-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="withdraw-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <h3>Withdraw</h3>
+            <input type="number" id="withdraw-amount" placeholder="Amount ($)">
+            <div id="withdraw-error" class="error-msg hidden"></div>
+            <div class="modal-actions">
+                <button class="btn secondary-btn" onclick="closeModals()">Cancel</button>
+                <button class="btn primary-btn" onclick="performAction('withdraw')">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deposit-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <h3>Deposit</h3>
+            <input type="number" id="deposit-amount" placeholder="Amount ($)">
+            <div id="deposit-error" class="error-msg hidden"></div>
+            <div class="modal-actions">
+                <button class="btn secondary-btn" onclick="closeModals()">Cancel</button>
+                <button class="btn primary-btn" onclick="performAction('deposit')">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="transfer-modal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <h3>Transfer</h3>
+            <input type="text" id="transfer-recipient" placeholder="Recipient ID">
+            <input type="number" id="transfer-amount" placeholder="Amount ($)">
+            <div id="transfer-error" class="error-msg hidden"></div>
+            <div class="modal-actions">
+                <button class="btn secondary-btn" onclick="closeModals()">Cancel</button>
+                <button class="btn primary-btn" onclick="performAction('transfer')">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden">Success</div>
+
+    <script>
+        let token = null;
+
+        async function login() {
+            const userId = document.getElementById('userId').value;
+            const pin = document.getElementById('pin').value;
+            const err = document.getElementById('login-error');
+            
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `userId=${userId}&pin=${pin}`
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                token = data.token;
+                err.classList.add('hidden');
+                document.getElementById('login-screen').classList.replace('active', 'hidden');
+                document.getElementById('dashboard-screen').classList.replace('hidden', 'active');
+                fetchData();
+            } else {
+                err.textContent = data.message;
+                err.classList.remove('hidden');
+            }
+        }
+
+        async function fetchData() {
+            if (!token) return;
+            const res = await fetch('/api/data', { headers: { 'Authorization': token } });
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById('welcome-msg').textContent = `Welcome, ${data.userId}`;
+                document.getElementById('balance-display').textContent = `$${data.balance.toFixed(2)}`;
+                renderHistory(data.transactions);
+            } else {
+                logout();
+            }
+        }
+
+        function renderHistory(txs) {
+            const list = document.getElementById('transaction-list');
+            list.innerHTML = '';
+            if (txs.length === 0) { list.innerHTML = '<p class="text-muted text-center">No transactions.</p>'; return; }
+            
+            txs.forEach(tx => {
+                const isPos = tx.type === 'Deposit' || tx.type === 'Transfer In';
+                const sign = isPos ? '+' : '-';
+                const cls = isPos ? 'positive' : 'negative';
+                list.innerHTML += `
+                    <div class="tx-item">
+                        <div class="tx-info"><h4>${tx.type}</h4><p>${tx.date} • ${tx.memo}</p></div>
+                        <div class="tx-amount ${cls}">${sign}$${tx.amount.toFixed(2)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        async function performAction(action) {
+            const amount = document.getElementById(`${action}-amount`).value;
+            const err = document.getElementById(`${action}-error`);
+            let body = `amount=${amount}`;
+            
+            if (action === 'transfer') {
+                const rec = document.getElementById('transfer-recipient').value;
+                body += `&recipientId=${rec}`;
+            }
+
+            const res = await fetch(`/api/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': token
+                },
+                body: body
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                closeModals();
+                fetchData();
+                showToast(`${action.charAt(0).toUpperCase() + action.slice(1)} Successful`);
+            } else {
+                err.textContent = data.message;
+                err.classList.remove('hidden');
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach(i => i.value='');
+            document.querySelectorAll('.error-msg').forEach(e => e.classList.add('hidden'));
+        }
+        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden')); }
+        function logout() { token = null; document.getElementById('dashboard-screen').classList.replace('active', 'hidden'); document.getElementById('login-screen').classList.replace('hidden', 'active'); }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.remove('hidden'); setTimeout(() => t.classList.add('show'), 10);
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.add('hidden'), 300); }, 3000);
+        }
+    </script>
+</body>
+</html>
