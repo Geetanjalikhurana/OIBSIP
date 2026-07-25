@@ -11,20 +11,21 @@ import java.util.Random;
 
 public class NumberGuessingGame extends JFrame {
 
-    // Modern Dark Theme Colors
-    private final Color BG_COLOR = new Color(30, 30, 34);
-    private final Color PANEL_COLOR = new Color(45, 45, 50);
-    private final Color TEXT_COLOR = new Color(240, 240, 240);
-    private final Color PRIMARY_COLOR = new Color(0, 122, 204);
-    private final Color PRIMARY_HOVER = new Color(0, 150, 255);
-    private final Color SUCCESS_COLOR = new Color(40, 167, 69);
-    private final Color DANGER_COLOR = new Color(220, 53, 69);
+    // Sci-Fi Theme Colors
+    private final Color BG_COLOR = new Color(5, 10, 15);
+    private final Color PANEL_COLOR = new Color(10, 15, 20);
+    private final Color TEXT_COLOR = new Color(0, 255, 204); // Neon Cyan
+    private final Color PRIMARY_COLOR = new Color(0, 200, 255);
+    private final Color PRIMARY_HOVER = new Color(0, 255, 255);
+    private final Color SUCCESS_COLOR = new Color(0, 255, 65); // Matrix Green
+    private final Color DANGER_COLOR = new Color(255, 0, 85); // Neon Pink/Red
+    private final Color HINT_COLOR = new Color(255, 200, 0); // Neon Yellow
 
-    // Modern Fonts
-    private final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 32);
-    private final Font SUBTITLE_FONT = new Font("Segoe UI", Font.BOLD, 20);
-    private final Font REGULAR_FONT = new Font("Segoe UI", Font.PLAIN, 16);
-    private final Font BOLD_FONT = new Font("Segoe UI", Font.BOLD, 16);
+    // Monospaced Fonts
+    private final Font TITLE_FONT = new Font("Consolas", Font.BOLD, 28);
+    private final Font SUBTITLE_FONT = new Font("Consolas", Font.BOLD, 18);
+    private final Font REGULAR_FONT = new Font("Consolas", Font.PLAIN, 14);
+    private final Font BOLD_FONT = new Font("Consolas", Font.BOLD, 16);
 
     // Game variables
     private int targetNumber;
@@ -33,34 +34,33 @@ public class NumberGuessingGame extends JFrame {
     private int maxAttempts = 7;
     private int attemptsLeft;
     private int roundCount = 0;
+    private boolean hintUsed;
 
     // UI Structure
-    private JPanel mainPanel;
+    private SciFiPanel mainPanel;
     private CardLayout cardLayout;
 
     // Menu Components
     private JTextArea scoreArea;
-    private StyledButton btnEasy, btnMedium, btnHard;
+    private SciFiButton btnEasy, btnMedium, btnHard;
     
     // Game Components
     private JLabel rangeLabel, attemptsLabel, feedbackLabel;
-    private CustomTextField guessField;
-    private StyledButton guessButton;
-    private StyledButton hintButton;
-    private boolean hintUsed;
+    private SciFiTextField guessField;
+    private SciFiButton guessButton, hintButton;
+    private Timer typingTimer; // For typing animation
 
     private ArrayList<String> roundHistory = new ArrayList<>();
 
     public NumberGuessingGame() {
-        setTitle("Number Guessing Game");
-        setSize(600, 500);
+        setTitle("AI.SYS // NUMBER_GUESSER");
+        setSize(650, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(BG_COLOR);
 
         cardLayout = new CardLayout();
-        mainPanel = new JPanel(cardLayout);
-        mainPanel.setBackground(BG_COLOR);
+        mainPanel = new SciFiPanel(cardLayout);
         
         mainPanel.add(createMenuPanel(), "MENU");
         mainPanel.add(createGamePanel(), "GAME");
@@ -69,42 +69,53 @@ public class NumberGuessingGame extends JFrame {
         cardLayout.show(mainPanel, "MENU");
     }
 
+    // Helper for typing effect
+    private void animateText(JLabel label, String text, Color color) {
+        if (typingTimer != null && typingTimer.isRunning()) {
+            typingTimer.stop();
+        }
+        label.setForeground(color);
+        label.setText("");
+        int[] index = {0};
+        typingTimer = new Timer(25, e -> {
+            if (index[0] < text.length()) {
+                label.setText(label.getText() + text.charAt(index[0]));
+                index[0]++;
+            } else {
+                ((Timer)e.getSource()).stop();
+            }
+        });
+        typingTimer.start();
+    }
+
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel(new BorderLayout(20, 20));
-        panel.setBackground(BG_COLOR);
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Header
-        JLabel title = new JLabel("Number Guessing Game", SwingConstants.CENTER);
+        JLabel title = new JLabel("INITIALIZE // NUMBER_GUESSER", SwingConstants.CENTER);
         title.setFont(TITLE_FONT);
-        title.setForeground(PRIMARY_COLOR);
+        title.setForeground(PRIMARY_HOVER);
         panel.add(title, BorderLayout.NORTH);
 
-        // Center Container
         JPanel centerContainer = new JPanel(new GridLayout(2, 1, 20, 20));
-        centerContainer.setBackground(BG_COLOR);
+        centerContainer.setOpaque(false);
 
-        // Difficulty Selection
         JPanel diffWrapper = new JPanel(new BorderLayout(10, 10));
-        diffWrapper.setBackground(PANEL_COLOR);
-        diffWrapper.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(60, 60, 65), 1),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
-
-        JLabel diffLabel = new JLabel("Select Difficulty", SwingConstants.CENTER);
+        diffWrapper.setOpaque(false);
+        
+        JLabel diffLabel = new JLabel("> SELECT CALIBRATION LEVEL", SwingConstants.CENTER);
         diffLabel.setFont(SUBTITLE_FONT);
         diffLabel.setForeground(TEXT_COLOR);
         diffWrapper.add(diffLabel, BorderLayout.NORTH);
 
         JPanel diffButtons = new JPanel(new GridLayout(1, 3, 10, 0));
-        diffButtons.setBackground(PANEL_COLOR);
+        diffButtons.setOpaque(false);
 
-        btnEasy = new StyledButton("Easy (1-50)", new Color(60, 60, 65), PRIMARY_HOVER);
-        btnMedium = new StyledButton("Medium (1-100)", PRIMARY_COLOR, PRIMARY_HOVER); // Default selected
-        btnHard = new StyledButton("Hard (1-200)", new Color(60, 60, 65), PRIMARY_HOVER);
+        btnEasy = new SciFiButton("LVL_1 (1-50)", PANEL_COLOR, PRIMARY_HOVER);
+        btnMedium = new SciFiButton("LVL_2 (1-100)", PRIMARY_COLOR, PRIMARY_HOVER); 
+        btnHard = new SciFiButton("LVL_3 (1-200)", PANEL_COLOR, PRIMARY_HOVER);
 
-        // Difficulty click handlers
         btnEasy.addActionListener(e -> setDifficulty(1, 50, 10, btnEasy));
         btnMedium.addActionListener(e -> setDifficulty(1, 100, 7, btnMedium));
         btnHard.addActionListener(e -> setDifficulty(1, 200, 5, btnHard));
@@ -114,36 +125,30 @@ public class NumberGuessingGame extends JFrame {
         diffButtons.add(btnHard);
         diffWrapper.add(diffButtons, BorderLayout.CENTER);
         
-        StyledButton startBtn = new StyledButton("START GAME", SUCCESS_COLOR, new Color(45, 185, 75));
-        startBtn.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        SciFiButton startBtn = new SciFiButton("EXECUTE_START()", SUCCESS_COLOR, new Color(0, 255, 100));
+        startBtn.setFont(new Font("Consolas", Font.BOLD, 20));
         startBtn.addActionListener(e -> startGame());
         diffWrapper.add(startBtn, BorderLayout.SOUTH);
 
         centerContainer.add(diffWrapper);
 
-        // Score History
         JPanel scoreWrapper = new JPanel(new BorderLayout(10, 10));
-        scoreWrapper.setBackground(PANEL_COLOR);
-        scoreWrapper.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(60, 60, 65), 1),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
+        scoreWrapper.setOpaque(false);
 
-        JLabel scoreTitle = new JLabel("Recent Scores", SwingConstants.CENTER);
+        JLabel scoreTitle = new JLabel("> SYSTEM_LOG // PREVIOUS_ROUNDS", SwingConstants.CENTER);
         scoreTitle.setFont(BOLD_FONT);
         scoreTitle.setForeground(TEXT_COLOR);
         scoreWrapper.add(scoreTitle, BorderLayout.NORTH);
 
-        scoreArea = new JTextArea("No rounds played yet.");
+        scoreArea = new JTextArea("AWAITING_INPUT...");
         scoreArea.setFont(REGULAR_FONT);
-        scoreArea.setForeground(new Color(200, 200, 200));
+        scoreArea.setForeground(TEXT_COLOR);
         scoreArea.setBackground(PANEL_COLOR);
         scoreArea.setEditable(false);
-        scoreArea.setHighlighter(null);
+        scoreArea.setBorder(BorderFactory.createLineBorder(new Color(0, 100, 150), 1));
         
         JScrollPane scroll = new JScrollPane(scoreArea);
         scroll.setBorder(BorderFactory.createEmptyBorder());
-        scroll.getVerticalScrollBar().setBackground(PANEL_COLOR);
         scoreWrapper.add(scroll, BorderLayout.CENTER);
 
         centerContainer.add(scoreWrapper);
@@ -152,62 +157,50 @@ public class NumberGuessingGame extends JFrame {
         return panel;
     }
 
-    private void setDifficulty(int min, int max, int attempts, StyledButton activeBtn) {
+    private void setDifficulty(int min, int max, int attempts, SciFiButton activeBtn) {
         this.minRange = min;
         this.maxRange = max;
         this.maxAttempts = attempts;
-
-        // Reset button colors
-        btnEasy.setNormalColor(new Color(60, 60, 65));
-        btnMedium.setNormalColor(new Color(60, 60, 65));
-        btnHard.setNormalColor(new Color(60, 60, 65));
-        
-        // Highlight active
+        btnEasy.setNormalColor(PANEL_COLOR);
+        btnMedium.setNormalColor(PANEL_COLOR);
+        btnHard.setNormalColor(PANEL_COLOR);
         activeBtn.setNormalColor(PRIMARY_COLOR);
     }
 
     private JPanel createGamePanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(BG_COLOR);
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(10, 20, 10, 20);
 
-        // Range Label
-        rangeLabel = new JLabel("Guess the number!", SwingConstants.CENTER);
+        rangeLabel = new JLabel("", SwingConstants.CENTER);
         rangeLabel.setFont(TITLE_FONT);
-        rangeLabel.setForeground(PRIMARY_COLOR);
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         panel.add(rangeLabel, gbc);
 
-        // Attempts Label
-        attemptsLabel = new JLabel("Attempts left: 7", SwingConstants.CENTER);
+        attemptsLabel = new JLabel("", SwingConstants.CENTER);
         attemptsLabel.setFont(SUBTITLE_FONT);
-        attemptsLabel.setForeground(TEXT_COLOR);
         gbc.gridy = 1;
         panel.add(attemptsLabel, gbc);
 
-        // Feedback Label
-        feedbackLabel = new JLabel("Good luck!", SwingConstants.CENTER);
-        feedbackLabel.setFont(new Font("Segoe UI", Font.ITALIC, 18));
-        feedbackLabel.setForeground(new Color(150, 150, 150));
+        feedbackLabel = new JLabel("", SwingConstants.CENTER);
+        feedbackLabel.setFont(new Font("Consolas", Font.BOLD, 16));
         gbc.gridy = 2;
         gbc.insets = new Insets(20, 20, 30, 20);
         panel.add(feedbackLabel, gbc);
 
-        // Input Field
         gbc.gridy = 3; gbc.insets = new Insets(0, 20, 10, 20);
-        guessField = new CustomTextField();
+        guessField = new SciFiTextField();
         guessField.setHorizontalAlignment(JTextField.CENTER);
         
-        // Clear error dynamically when user types
         guessField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { resetFeedback(); }
             public void removeUpdate(DocumentEvent e) { resetFeedback(); }
             public void changedUpdate(DocumentEvent e) { resetFeedback(); }
             
             private void resetFeedback() {
-                if(feedbackLabel.getText().startsWith("Invalid")) {
+                if(feedbackLabel.getText().startsWith("ERR:")) {
                     feedbackLabel.setText(" ");
                 }
             }
@@ -216,27 +209,25 @@ public class NumberGuessingGame extends JFrame {
         guessField.addActionListener(e -> processGuess());
         panel.add(guessField, gbc);
 
-        // Submit & Hint Buttons
         gbc.gridy = 4; gbc.insets = new Insets(10, 20, 20, 20);
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setBackground(BG_COLOR);
+        buttonPanel.setOpaque(false);
         
-        guessButton = new StyledButton("SUBMIT GUESS", PRIMARY_COLOR, PRIMARY_HOVER);
-        guessButton.setPreferredSize(new Dimension(160, 45));
+        guessButton = new SciFiButton("SUBMIT_DATA", PRIMARY_COLOR, PRIMARY_HOVER);
+        guessButton.setPreferredSize(new Dimension(180, 45));
         guessButton.addActionListener(e -> processGuess());
         buttonPanel.add(guessButton);
         
-        hintButton = new StyledButton("HINT", new Color(220, 120, 0), new Color(255, 150, 0));
-        hintButton.setPreferredSize(new Dimension(90, 45));
+        hintButton = new SciFiButton("QUERY_HINT", HINT_COLOR, new Color(255, 255, 100));
+        hintButton.setPreferredSize(new Dimension(120, 45));
         hintButton.addActionListener(e -> provideHint());
         buttonPanel.add(hintButton);
         
         panel.add(buttonPanel, gbc);
 
-        // Quit Button
         gbc.gridy = 5; gbc.insets = new Insets(30, 20, 10, 20);
-        StyledButton quitBtn = new StyledButton("Quit to Menu", new Color(60, 60, 65), DANGER_COLOR);
+        SciFiButton quitBtn = new SciFiButton("ABORT_OPERATION", PANEL_COLOR, DANGER_COLOR);
         quitBtn.addActionListener(e -> cardLayout.show(mainPanel, "MENU"));
         panel.add(quitBtn, gbc);
 
@@ -248,14 +239,13 @@ public class NumberGuessingGame extends JFrame {
         attemptsLeft = maxAttempts;
         roundCount++;
 
-        rangeLabel.setText("Number between " + minRange + " & " + maxRange);
+        animateText(rangeLabel, "SCANNING RANGE: [" + minRange + " - " + maxRange + "]", PRIMARY_HOVER);
         updateAttemptsLabel();
-        feedbackLabel.setText("Make your first guess!");
-        feedbackLabel.setForeground(new Color(150, 150, 150));
+        animateText(feedbackLabel, "SYSTEM_READY: AWAITING INPUT...", TEXT_COLOR);
+        
         guessField.setText("");
         guessField.setEnabled(true);
         guessButton.setEnabled(true);
-        
         hintUsed = false;
         hintButton.setEnabled(true);
 
@@ -264,7 +254,7 @@ public class NumberGuessingGame extends JFrame {
     }
 
     private void updateAttemptsLabel() {
-        attemptsLabel.setText("Attempts left: " + attemptsLeft);
+        attemptsLabel.setText("ATTEMPTS_REMAINING: " + attemptsLeft);
         if (attemptsLeft <= 2) {
             attemptsLabel.setForeground(DANGER_COLOR);
         } else {
@@ -282,8 +272,7 @@ public class NumberGuessingGame extends JFrame {
         try {
             guess = Integer.parseInt(input);
         } catch (NumberFormatException ex) {
-            feedbackLabel.setText("Invalid input! Enter a valid number.");
-            feedbackLabel.setForeground(DANGER_COLOR);
+            animateText(feedbackLabel, "ERR: INVALID_DATA_TYPE_EXCEPTION", DANGER_COLOR);
             guessField.setText("");
             return;
         }
@@ -292,23 +281,19 @@ public class NumberGuessingGame extends JFrame {
         updateAttemptsLabel();
 
         if (guess == targetNumber) {
-            feedbackLabel.setText("Correct! The number was " + targetNumber);
-            feedbackLabel.setForeground(SUCCESS_COLOR);
+            animateText(feedbackLabel, "MATCH_FOUND! TARGET IDENTIFIED: " + targetNumber, SUCCESS_COLOR);
             endRound(true);
         } else if (guess < targetNumber) {
-            feedbackLabel.setText("Too Low!");
-            feedbackLabel.setForeground(new Color(255, 165, 0)); // Orange
+            animateText(feedbackLabel, "STATUS: VALUE_TOO_LOW. RECALCULATING...", HINT_COLOR);
         } else {
-            feedbackLabel.setText("Too High!");
-            feedbackLabel.setForeground(new Color(255, 165, 0));
+            animateText(feedbackLabel, "STATUS: VALUE_TOO_HIGH. RECALCULATING...", HINT_COLOR);
         }
 
         guessField.setText("");
         guessField.requestFocus();
 
         if (attemptsLeft == 0 && guess != targetNumber) {
-            feedbackLabel.setText("Out of attempts! Number was " + targetNumber);
-            feedbackLabel.setForeground(DANGER_COLOR);
+            animateText(feedbackLabel, "CRITICAL: OUT_OF_ATTEMPTS! TRUTH: " + targetNumber, DANGER_COLOR);
             endRound(false);
         }
     }
@@ -323,27 +308,26 @@ public class NumberGuessingGame extends JFrame {
         
         String hintMsg = "";
         if (selectedType.equals("even_odd")) {
-            hintMsg = targetNumber % 2 == 0 ? "Hint: The number is Even." : "Hint: The number is Odd.";
+            hintMsg = targetNumber % 2 == 0 ? "DECRYPTING... TARGET_IS_EVEN" : "DECRYPTING... TARGET_IS_ODD";
         } else if (selectedType.equals("multiple")) {
-            int multiple = 2 + new Random().nextInt(4); // 2, 3, 4, 5
+            int multiple = 2 + new Random().nextInt(4);
             int originalMultiple = multiple;
             while (targetNumber % multiple != 0 && multiple <= 7) {
                 multiple++;
             }
             if (targetNumber % multiple == 0) {
-                hintMsg = "Hint: The number is a multiple of " + multiple + ".";
+                hintMsg = "DECRYPTING... MULTIPLE_OF_" + multiple;
             } else {
-                hintMsg = "Hint: The number is not a multiple of " + originalMultiple + ".";
+                hintMsg = "DECRYPTING... NOT_MULTIPLE_OF_" + originalMultiple;
             }
         } else {
             int rangeOffset = 5 + new Random().nextInt(10);
             int low = Math.max(minRange, targetNumber - rangeOffset);
             int high = Math.min(maxRange, targetNumber + rangeOffset);
-            hintMsg = "Hint: The number is between " + low + " and " + high + ".";
+            hintMsg = "DECRYPTING... IN_BOUNDS [" + low + " TO " + high + "]";
         }
         
-        feedbackLabel.setText(hintMsg);
-        feedbackLabel.setForeground(new Color(255, 180, 0)); // Golden Orange
+        animateText(feedbackLabel, hintMsg, HINT_COLOR);
     }
 
     private void endRound(boolean won) {
@@ -352,25 +336,22 @@ public class NumberGuessingGame extends JFrame {
         hintButton.setEnabled(false);
 
         int attemptsUsed = maxAttempts - attemptsLeft;
-        String historyEntry = String.format("Round %d: %s | %s - %d attempts used",
-                roundCount,
-                (minRange + "-" + maxRange),
-                won ? "WON" : "LOST",
-                attemptsUsed);
+        String historyEntry = String.format("LOG_%d: RANGE[%d-%d] | %s | ATTEMPTS:%d",
+                roundCount, minRange, maxRange,
+                won ? "SUCCESS" : "FAILURE", attemptsUsed);
         
         roundHistory.add(historyEntry);
         updateScoreArea();
 
-        // Custom Dialog for Game Over
-        Timer timer = new Timer(1500, e -> {
-            UIManager.put("OptionPane.background", PANEL_COLOR);
-            UIManager.put("Panel.background", PANEL_COLOR);
+        Timer timer = new Timer(2000, e -> {
+            UIManager.put("OptionPane.background", BG_COLOR);
+            UIManager.put("Panel.background", BG_COLOR);
             UIManager.put("OptionPane.messageForeground", TEXT_COLOR);
             
-            String msg = won ? "Incredible! You guessed it right!" : "Game Over! You'll get it next time.";
+            String msg = won ? "MISSION ACCOMPLISHED." : "MISSION FAILED. TARGET LOST.";
             int choice = JOptionPane.showConfirmDialog(this,
-                    msg + "\nPlay again?",
-                    won ? "Victory" : "Defeat",
+                    msg + "\nREBOOT SEQUENCE?",
+                    won ? "SUCCESS" : "FATAL_ERROR",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.PLAIN_MESSAGE);
 
@@ -386,7 +367,7 @@ public class NumberGuessingGame extends JFrame {
 
     private void updateScoreArea() {
         StringBuilder sb = new StringBuilder();
-        for (int i = roundHistory.size() - 1; i >= 0; i--) { // Reverse order
+        for (int i = roundHistory.size() - 1; i >= 0; i--) {
             sb.append(roundHistory.get(i)).append("\n");
         }
         scoreArea.setText(sb.toString());
@@ -394,56 +375,103 @@ public class NumberGuessingGame extends JFrame {
 
     // --- Custom UI Components --- //
 
-    class StyledButton extends JButton {
+    class SciFiPanel extends JPanel {
+        public SciFiPanel(LayoutManager layout) { super(layout); }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setColor(BG_COLOR);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+            
+            // Draw subtle sci-fi grid
+            g2.setColor(new Color(0, 50, 40, 100)); // semi-transparent
+            g2.setStroke(new BasicStroke(1f));
+            for (int i = 0; i < getWidth(); i += 40) {
+                g2.drawLine(i, 0, i, getHeight());
+            }
+            for (int i = 0; i < getHeight(); i += 40) {
+                g2.drawLine(0, i, getWidth(), i);
+            }
+            g2.dispose();
+        }
+    }
+
+    class SciFiButton extends JButton {
         private Color normalColor;
         private Color hoverColor;
 
-        public StyledButton(String text, Color normal, Color hover) {
+        public SciFiButton(String text, Color normal, Color hover) {
             super(text);
             this.normalColor = normal;
             this.hoverColor = hover;
             
             setFont(BOLD_FONT);
-            setForeground(Color.WHITE);
             setBackground(normalColor);
+            updateTextColor(normalColor);
             setFocusPainted(false);
             setBorderPainted(false);
             setContentAreaFilled(false);
-            setOpaque(true);
+            setOpaque(false);
             setCursor(new Cursor(Cursor.HAND_CURSOR));
 
             addMouseListener(new MouseAdapter() {
                 public void mouseEntered(MouseEvent e) {
-                    if (isEnabled()) setBackground(hoverColor);
+                    if (isEnabled()) {
+                        setBackground(hoverColor);
+                        updateTextColor(hoverColor);
+                    }
                 }
                 public void mouseExited(MouseEvent e) {
-                    if (isEnabled()) setBackground(normalColor);
+                    if (isEnabled()) {
+                        setBackground(normalColor);
+                        updateTextColor(normalColor);
+                    }
                 }
             });
+        }
+        
+        private void updateTextColor(Color bgColor) {
+            if (bgColor.equals(PANEL_COLOR)) {
+                setForeground(TEXT_COLOR);
+            } else {
+                setForeground(BG_COLOR);
+            }
         }
         
         public void setNormalColor(Color color) {
             this.normalColor = color;
             setBackground(color);
+            updateTextColor(color);
+            repaint();
         }
 
         @Override
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // Glowing border effect
+            for(int i=0; i<3; i++) {
+                g2.setColor(new Color(getBackground().getRed(), getBackground().getGreen(), getBackground().getBlue(), 50 - (i*15)));
+                g2.draw(new RoundRectangle2D.Float(i, i, getWidth()-(i*2)-1, getHeight()-(i*2)-1, 5, 5));
+            }
+            
             g2.setColor(getBackground());
-            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 10, 10));
+            g2.fill(new RoundRectangle2D.Float(3, 3, getWidth()-7, getHeight()-7, 5, 5));
+            
             super.paintComponent(g);
             g2.dispose();
         }
     }
 
-    class CustomTextField extends JTextField {
-        public CustomTextField() {
+    class SciFiTextField extends JTextField {
+        public SciFiTextField() {
             setOpaque(false);
-            setFont(new Font("Segoe UI", Font.BOLD, 24));
-            setForeground(Color.WHITE);
-            setCaretColor(PRIMARY_COLOR);
+            setFont(new Font("Consolas", Font.BOLD, 24));
+            setForeground(PRIMARY_HOVER);
+            setCaretColor(PRIMARY_HOVER);
             setBorder(new EmptyBorder(10, 15, 10, 15));
             setPreferredSize(new Dimension(300, 50));
         }
@@ -453,15 +481,17 @@ public class NumberGuessingGame extends JFrame {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             
-            // Background
-            g2.setColor(new Color(60, 60, 65));
-            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 15, 15));
+            g2.setColor(PANEL_COLOR);
+            g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 5, 5));
             
-            // Border outline
             if (hasFocus()) {
-                g2.setColor(PRIMARY_COLOR);
+                g2.setColor(PRIMARY_HOVER);
                 g2.setStroke(new BasicStroke(2f));
-                g2.draw(new RoundRectangle2D.Float(1, 1, getWidth()-2, getHeight()-2, 15, 15));
+                g2.draw(new RoundRectangle2D.Float(1, 1, getWidth()-3, getHeight()-3, 5, 5));
+            } else {
+                g2.setColor(PRIMARY_COLOR);
+                g2.setStroke(new BasicStroke(1f));
+                g2.draw(new RoundRectangle2D.Float(1, 1, getWidth()-3, getHeight()-3, 5, 5));
             }
             
             super.paintComponent(g);
@@ -470,7 +500,6 @@ public class NumberGuessingGame extends JFrame {
     }
 
     public static void main(String[] args) {
-        // Force cross-platform to remove OS-specific button styling
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
